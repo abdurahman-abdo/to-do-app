@@ -56,7 +56,7 @@ def save_tasks(tasks) -> None:
 
 def main() -> None:
     global FILE_NAME
-    FILE_NAME = r'C:\Users\abdur\OneDrive\Documents\myProjects\to-do-app\src\to_do_app\tasks.json'
+    FILE_NAME = os.path.join(os.path.dirname(__file__), "tasks.json")
     
     args = configure_cli()
     tasks = load_tasks()
