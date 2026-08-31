@@ -6,38 +6,31 @@ def configure_cli() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--add", help="Item to add")
     parser.add_argument("--set-name", nargs=2, metavar=("ID", "NAME"), help="Change an existing task's name")
-    parser.add_argument("--due", help="Due date")
+    
+    parser.add_argument("--due", default="None", help="Due date")
     parser.add_argument("--set-date", nargs=2, metavar=("ID", "DATE"), help="Change an existing task's due date")
-    parser.add_argument("--priority", choices=["high", "medium", "low"], help="Priority when adding a task")
+    
+    parser.add_argument("--priority", default='medium', choices=["high", "medium", "low"], help="Priority when adding a task")
     parser.add_argument("--set-priority", nargs=2, metavar=("ID", "PRIORITY"), help="Change an existing task's priority")
-    parser.add_argument(
-        "--filter", 
-        choices=["all", "pending", "completed", "low", "medium", "high"], 
-        nargs='+',
-        help="Filter by task status"
-    )
+    
+    parser.add_argument("--category", default="None", help="Due date")
+    parser.add_argument("--set-category", nargs=2, metavar=("ID", "CATEGORY"), help="Change an existing task's category")
+    
+    parser.add_argument("--filter", nargs='+', help="Filter by task status")
     
     parser.add_argument("--done", nargs="+", type=int, help="Mark a task as done")
     parser.add_argument("--undo", nargs="+", type=int, help="Mark a task as done")
     parser.add_argument("--delete", nargs="+", type=int, help="Delete a task")
     
     args = parser.parse_args()
-    
-    # Require --due and --priority only when --add is present
-    if args.add is not None and (args.due is None or args.priority is None):
-        parser.error("--due and --priority is required when --add is used.")
-    
-    # Check date authenticity
-    if args.due and not is_valid_date(args.due):
-        parser.error("due date must be an appropriate date in DD/MM/YYYY format")
-        
     return args
 
 def load_tasks() -> list[dict]:
     DEFAULT_TASK = {
         "completed": False,
         "due": None,
-        "priority": "medium"
+        "priority": "medium",
+        "category": None,
     }
     
     if not os.path.exists(FILE_NAME):
@@ -56,19 +49,21 @@ def save_tasks(tasks) -> None:
 
 def main() -> None:
     global FILE_NAME
-    FILE_NAME = os.path.join(os.path.dirname(__file__), "tasks.json")
+    FILE_NAME = os.path.join(os.path.dirname(__file__), r"data\tasks.json")
     
     args = configure_cli()
     tasks = load_tasks()
     
     if args.add:
-        add_task(tasks, args.add, args.due, args.priority)
+        add_task(tasks, args.add, args.due, args.priority, args.category)
     if args.set_name:
         change_name(tasks, *args.set_name)
     if args.set_date:
         change_date(tasks, *args.set_date)
     if args.set_priority:
         change_priority(tasks, args.set_priority)
+    if args.set_category:
+        change_category(tasks, args.set_category)
     if args.done:
         complete_task(tasks, *args.done)
     if args.undo:
@@ -80,7 +75,7 @@ def main() -> None:
             rprint(line)
     
 def is_valid_date(date_str: str) -> bool:
-    if date_str is None:
+    if date_str == "None":
         return True
     
     # Check format DD/MM/YYYY for years 2000+
@@ -94,25 +89,38 @@ def is_valid_date(date_str: str) -> bool:
     except ValueError:
         return False
 
-def add_task(tasks: list[dict], item: str, date: str, priority: str) -> None:
+def add_task(tasks: list[dict], item: str, date, priority, category) -> None:
+    if not is_valid_date(date):
+            print("due date must be an appropriate date in DD/MM/YYYY format")
+            return
+    
+    if date == "None":
+        date = None
+    if category == "None":
+        category = None
+    if category in ["all", "pending", "completed", "high", "low", "medium"]:
+        category = None
+        print("Category can't be any of these: all, pending, completed, high, low, medium; and was defaulted to None")
+    
     tasks.append({"id": max((task.get("id", 0) for task in tasks), default=0) + 1, 
                   "name": item,
                   "completed": False,
                   "due": date,
-                  "priority": priority.lower()})
-    print("Task added successfully")
+                  "priority": priority.lower(),
+                  "category": category,
+                  })
     save_tasks(tasks)
+    print(f"Task {item} with id {max((task.get("id", 0) for task in tasks), default=0)} was added successfully!")
 
-def change_priority(tasks, priority_data):
-    idx, priority = priority_data
-    
-    if priority not in ["high", "medium", "low"]:
-        raise ValueError("Priority must be on of the following: high, medium, or low!")
+def change_name(tasks, name_data):
+    idx, name = name_data
     
     for task in tasks:
         if task['id'] == int(idx):
-            task['priority'] = priority
+            task['name'] = name
+    
     save_tasks(tasks)
+    print(f"The task name of task_{idx} was successfully changed to {name}.")
 
 def change_date(tasks, date_data):
     idx, date = date_data
@@ -123,21 +131,58 @@ def change_date(tasks, date_data):
     
     for task in tasks:
         if task['id'] == int(idx):
-            task['due'] = date
+            if date == "None":
+                task['due'] = None
+            else:
+                task['due'] = date
+    
     save_tasks(tasks)
+    print(f"The due date of task_{idx} was successfully changed to {date}.")
+
+def change_priority(tasks, priority_data):
+    idx, priority = priority_data
+    
+    if priority not in ["high", "medium", "low"]:
+        raise ValueError("Priority must be on of the following: high, medium, or low!")
+    
+    for task in tasks:
+        if task['id'] == int(idx):
+            task['priority'] = priority
+    
+    save_tasks(tasks)
+    print(f"The priority of task_{idx} was successfully changed to {priority}.")
+
+def change_category(tasks, category_data):
+    idx, category = category_data
+    
+    if category in ["all", "pending", "completed", "high", "low", "medium"]:
+        category = None
+        print("Category can't be any of these: all, pending, completed, high, low, medium; and was defaulted to None")
+    
+    for task in tasks:
+        if task['id'] == int(idx):
+            if category == "None":
+                task['category'] = None
+            else:
+                task['category'] = category
+                
+    save_tasks(tasks)
+    print(f"The category of task_{idx} was successfully changed to {category}.")
 
 def complete_task(tasks: list[dict], *ids: int) -> None:
     for task in tasks:
         if task['id'] in ids:
             task['completed'] = True
             print(f"Task: \"{task['name']}\" was successfully marked as complete!")
-    save_tasks(tasks)
     
+    save_tasks(tasks)
+
 def undo_task(tasks: list[dict], *ids: int) -> None:
     for task in tasks:
         if task['id'] in ids:
             task['completed'] = False
             print(f"Task: \"{task['name']}\" was successfully undone!")
+    
     save_tasks(tasks)
 
 def delete_task(tasks: list[dict], *ids: int) -> None:
@@ -190,6 +235,23 @@ def filter_tasks(tasks: list[dict], filter_types: list) -> None:
     
     
     
+    # filter category
+    
+    # first - load categories as list
+    categories = [t['category'] for t in tasks]
+    
+    # then - check
+    category_filter = [p for p in categories if p in filter_types]
+    if category_filter:
+        return_values_copy = return_values.copy()
+        return_values = []
+    
+        for return_tasks in return_values_copy:
+            if return_tasks["category"] in category_filter:
+                return_values.append(return_tasks)
+    
+    
+    
     # final result
     output = []
     if not return_values:
@@ -203,8 +265,17 @@ def filter_tasks(tasks: list[dict], filter_types: list) -> None:
         
         colors = 'dim white' if values['completed'] else 'bold red' if today > due_date else 'green' if values['priority'] == "low" else 'yellow' if values['priority'] == "medium" else 'bold magenta' if values['priority'] == "high" else 'white'
         
-        output.append(f"[{colors}] {values['name']} (due: {values['due']}), [italic]id={values['id']}[/italic][/{colors}]")
-        
+        output.append(f"{values['category']}:[{colors}] {values['name']} (due: {values['due']}), [italic]id={values['id']}[/italic][/{colors}]")
+    
+    # final cleanup
+    possible_values = ["all", "pending", "completed", "high", "low", "medium", *categories]
+    check = 0
+    for filters in filter_types:
+        if filters in possible_values:
+            check += 1
+    if check == 0:
+        return ["The filters specified were never found!"]
+    
     return output
 
 if __name__ == "__main__":
