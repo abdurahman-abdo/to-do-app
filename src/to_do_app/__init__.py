@@ -1,6 +1,7 @@
 from datetime import datetime
+from emoji import emojize
 from rich import print as rprint
-import argparse, re, json, os
+import argparse, re, json, os, sys
 
 def configure_cli() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -48,6 +49,11 @@ def save_tasks(tasks) -> None:
         json.dump(tasks, file, indent=4)
 
 def main() -> None:
+    # check if no arguments at all
+    if len(sys.argv) == 1:
+        print("Welcome to the To-Do App! Use --help to see available commands.")
+        return
+        
     global FILE_NAME
     FILE_NAME = os.path.join(os.path.dirname(__file__), r"data\tasks.json")
     
@@ -97,20 +103,21 @@ def add_task(tasks: list[dict], item: str, date, priority, category) -> None:
     if date == "None":
         date = None
     if category == "None":
-        category = None
+        category = "uncategorized"
     if category in ["all", "pending", "completed", "high", "low", "medium"]:
-        category = None
-        print("Category can't be any of these: all, pending, completed, high, low, medium; and was defaulted to None")
+        category = "uncategorized"
+        print("Category can't be any of these: all, pending, completed, high, low, medium; and was defaulted to uncategorized")
     
-    tasks.append({"id": max((task.get("id", 0) for task in tasks), default=0) + 1, 
+    new_id = max((task.get("id", 0) for task in tasks), default=0) + 1
+    tasks.append({"id": new_id, 
                   "name": item,
                   "completed": False,
                   "due": date,
                   "priority": priority.lower(),
-                  "category": category,
+                  "category": category.capitalize(),
                   })
     save_tasks(tasks)
-    print(f"Task {item} with id {max((task.get("id", 0) for task in tasks), default=0)} was added successfully!")
+    print(f"Task {item} with id {new_id} was added successfully!")
 
 def change_name(tasks, name_data):
     idx, name = name_data
@@ -141,6 +148,7 @@ def change_date(tasks, date_data):
 
 def change_priority(tasks, priority_data):
     idx, priority = priority_data
+    priority = priority.lower()
     
     if priority not in ["high", "medium", "low"]:
         raise ValueError("Priority must be on of the following: high, medium, or low!")
@@ -156,13 +164,15 @@ def change_category(tasks, category_data):
     idx, category = category_data
     
     if category in ["all", "pending", "completed", "high", "low", "medium"]:
-        category = None
+        category = "uncategorized"
         print("Category can't be any of these: all, pending, completed, high, low, medium; and was defaulted to None")
+    
+    category = category.capitalize()
     
     for task in tasks:
         if task['id'] == int(idx):
             if category == "None":
-                task['category'] = None
+                task['category'] = "uncategorized"
             else:
                 task['category'] = category
                 
@@ -195,6 +205,22 @@ def delete_task(tasks: list[dict], *ids: int) -> None:
 def filter_tasks(tasks: list[dict], filter_types: list) -> None:
     if not tasks:
         return ["No tasks found!"]
+    
+    # make filters consistent
+    filter_types = [filters.lower() for filters in filter_types]
+    
+    # first - load categories as list
+    existing_categories = [t['category'] for t in tasks]
+
+    # Cleanup
+    possible_values = ["all", "pending", "completed", "high", "low", "medium", *list(map(str.lower, filter(lambda item: isinstance(item, str), existing_categories)))]
+    check = 0
+    for filters in filter_types:
+        if filters in possible_values:
+            check += 1
+    if check == 0:
+        return ["The filters specified were never found!"]
+    
     return_values = []
     
     
@@ -237,11 +263,9 @@ def filter_tasks(tasks: list[dict], filter_types: list) -> None:
     
     # filter category
     
-    # first - load categories as list
-    categories = [t['category'] for t in tasks]
     
-    # then - check
-    category_filter = [p for p in categories if p in filter_types]
+    # check for existing categories
+    category_filter = [p for p in existing_categories if isinstance(p, str) and p.lower() in filter_types]
     if category_filter:
         return_values_copy = return_values.copy()
         return_values = []
@@ -264,17 +288,9 @@ def filter_tasks(tasks: list[dict], filter_types: list) -> None:
             due_date = datetime.max.date()
         
         colors = 'dim white' if values['completed'] else 'bold red' if today > due_date else 'green' if values['priority'] == "low" else 'yellow' if values['priority'] == "medium" else 'bold magenta' if values['priority'] == "high" else 'white'
+        category_emotes = emojize(f":{values['category']}:")
         
-        output.append(f"{values['category']}:[{colors}] {values['name']} (due: {values['due']}), [italic]id={values['id']}[/italic][/{colors}]")
-    
-    # final cleanup
-    possible_values = ["all", "pending", "completed", "high", "low", "medium", *categories]
-    check = 0
-    for filters in filter_types:
-        if filters in possible_values:
-            check += 1
-    if check == 0:
-        return ["The filters specified were never found!"]
+        output.append(f"[blue]{category_emotes}[/blue] [{colors}]{values['name']} (due: {values['due']}), [italic]id={values['id']}[/italic][/{colors}]")
     
     return output
 
