@@ -1,7 +1,7 @@
 [project]
 name = "to-do-app"
 version = "0.1.0"
-description = "Add your description here"
+description = "A to-do-app based on Command Line Interface"
 readme = "README.md"
 authors = [
     { name = "Abdurahman Mohammed", email = "abdurahmanmoh.3@gmail.com" }
