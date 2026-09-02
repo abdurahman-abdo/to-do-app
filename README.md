@@ -37,13 +37,13 @@ Along the way I also used this as a chance to actually practice git properly by 
 ### Usage Options:
 
 #### Creating & Editing
---add, --set-name, --due, --set-date, --priority, --set-priority, --category, --set-category
+`--add`, `--set-name`, `--due`, `--set-date`, `--priority`, `--set-priority`, `--category`, `--set-category`
 
 #### Viewing
---filter
+`--filter`
 
 #### Status & Deletion
---done, --undo, --delete
+`--done`, `--undo`, `--delete`
 
 #### Examples
 ```bash
@@ -54,29 +54,44 @@ uv run todo --done 1 4 7
 ```
 
 #### Full Reference:
-  `-h`/`--help`           
-            shows help message
-  `--add` **[NEW_TASK_NAME]**   
-                        Add a new task for the first time, declaring the task's name
-  `--set-name` **[TASK_ID TASK_NAME]**
-                        Change an existing task's name
-  `--due` **[DD/MM/YYYY]**      
-                        Assign a task's due date for the first time (use directly after --add) [optional, omit for no due date]
-  `--set-date` **[TASK_ID NEW_DATE]**
-                        Change an existing task's due date
-  `--priority` **[{high,medium,low}]**
-                        Assign a task's priority level for the first time (use directly after --add) [optional, omit for medium priority]
-  `--set-priority` **[TASK_ID NEW_PRIORITY]**
-                        Change an existing task's priority level
-  `--category` **[CATEGORY]**   
-                        Assign a task category for the first time (use directly after --add) [optional, omit for uncategorized]
-  `--set-category` **[TASK_ID NEW_CATEGORY]**
-                        Change an existing task's category
-  `--filter` **[FILTER ...]**
-                        Filter by status, priority, or category (e.g. pending, high, work) [can choose multiple filters]
-  `--done` **[TASK_ID ...]**
-                        Mark task/s as done by passing in a task id
-  `--undo` **[TASK_ID ...]**
-                        Mark task/s as not done (undo completion) by passing in a task id
-  `--delete` **[TASK_ID ...]**
-                        Delete task/s by passing in a task id
+
+<dl>
+  <dt><code>-h</code> / <code>--help</code></dt>
+  <dd>shows help message</dd>
+
+  <dt><code>--add</code> <b>[NEW_TASK_NAME]</b></dt>
+  <dd>Add a new task for the first time, declaring the task's name</dd>
+
+  <dt><code>--set-name</code> <b>[TASK_ID TASK_NAME]</b></dt>
+  <dd>Change an existing task's name</dd>
+
+  <dt><code>--due</code> <b>[DD/MM/YYYY]</b></dt>
+  <dd>Assign a task's due date for the first time (use directly after --add) [optional, omit for no due date]</dd>
+
+  <dt><code>--set-date</code> <b>[TASK_ID NEW_DATE]</b></dt>
+  <dd>Change an existing task's due date</dd>
+
+  <dt><code>--priority</code> <b>[{high,medium,low}]</b></dt>
+  <dd>Assign a task's priority level for the first time (use directly after --add) [optional, omit for medium priority]</dd>
+
+  <dt><code>--set-priority</code> <b>[TASK_ID NEW_PRIORITY]</b></dt>
+  <dd>Change an existing task's priority level</dd>
+
+  <dt><code>--category</code> <b>[CATEGORY]</b></dt>
+  <dd>Assign a task category for the first time (use directly after --add) [optional, omit for uncategorized]</dd>
+
+  <dt><code>--set-category</code> <b>[TASK_ID NEW_CATEGORY]</b></dt>
+  <dd>Change an existing task's category</dd>
+
+  <dt><code>--filter</code> <b>[FILTER ...]</b></dt>
+  <dd>Filter by status, priority, or category (e.g. pending, high, work) [can choose multiple filters]</dd>
+
+  <dt><code>--done</code> <b>[TASK_ID ...]</b></dt>
+  <dd>Mark task/s as done by passing in a task id</dd>
+
+  <dt><code>--undo</code> <b>[TASK_ID ...]</b></dt>
+  <dd>Mark task/s as not done (undo completion) by passing in a task id</dd>
+
+  <dt><code>--delete</code> <b>[TASK_ID ...]</b></dt>
+  <dd>Delete task/s by passing in a task id</dd>
+</dl>
