@@ -83,8 +83,11 @@ uv run todo --done 1 4 7
   <dt><code>--set-category</code> <b>[TASK_ID NEW_CATEGORY]</b></dt>
   <dd>Change an existing task's category</dd>
 
-  <dt><code>--filter</code> <b>[FILTER ...]</b></dt>
+  <dt><code>--filter</code> <b>[FILTER_VALUE/S ...]</b></dt>
   <dd>Filter by status, priority, or category (e.g. pending, high, work) [can choose multiple filters]</dd>
+
+  <dt><code>--sort</code> <b>KEY [DIRECTION] [save]</b></dt>
+  <dd>Sort by name and due date, default is ascending (e.g. name ascending, date descending) [use save at the end if you want that specific sort to be saved]</dd>
 
   <dt><code>--done</code> <b>[TASK_ID ...]</b></dt>
   <dd>Mark task/s as done by passing in a task id</dd>

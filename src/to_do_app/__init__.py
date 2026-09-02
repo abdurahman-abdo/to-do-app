@@ -18,7 +18,8 @@ def configure_cli() -> argparse.Namespace:
     parser.add_argument("--category", default="uncategorized", metavar="CATEGORY", help="Assign a task category for the first time (use directly after --add) [optional, omit for uncategorized]")
     parser.add_argument("--set-category", nargs=2, metavar=("TASK_ID", "NEW_CATEGORY"), help="Change an existing task's category")
     
-    parser.add_argument("--filter", metavar="FILTER", nargs='+', help="Filter by status, priority, or category (e.g. pending, high, work)")
+    parser.add_argument("--filter", metavar="FILTER_VALUE", nargs='+', help="Filter by status, priority, or category (e.g. pending, high, work)")
+    parser.add_argument("--sort", metavar="VALUE", nargs='+', help="Sort by name and due date, default is ascending (e.g. name ascending, date descending) [use save at the end if you want that specific sort to be saved]")
     
     parser.add_argument("--done", nargs="+", metavar="TASK_ID", type=int, help="Mark a task as done by passing in a task id")
     parser.add_argument("--undo", nargs="+", metavar="TASK_ID", type=int, help="Mark a task as not done (undo completion) by passing in a task id")
@@ -85,6 +86,9 @@ def main() -> None:
         undo_task(tasks, *args.undo)
     if args.delete:
         delete_task(tasks, *args.delete)
+    if args.sort:
+        for line in sort_tasks(tasks, args.sort):
+            rprint(line)
     if args.filter:
         for line in filter_tasks(tasks, args.filter):
             rprint(line)
@@ -211,6 +215,62 @@ def delete_task(tasks: list[dict], *ids: int) -> None:
         print(f"Task: \"{task['name']}\" was removed successfully!")
     save_tasks(remaining)
 
+def sort_tasks(tasks: list[dict], sorting_data: list[str]):
+    cleaned_data = [s.lower() for s in sorting_data]
+    
+    # check if the user wants to save
+    if save := 'save' in cleaned_data:
+        cleaned_data.remove('save')
+    
+    # Validate sorting_data's count
+    if not (1 <= len(cleaned_data) <= 2):
+        print(
+            "Sort usage was incorrect!\n"
+            "Sort by name and due date, default is ascending (e.g. 'name ascending', 'date descending')\n"
+            "[use 'save' at the end if you want that specific sort to be saved]"
+        )
+        return
+    
+    # Assign sorting configuration
+    key = cleaned_data[0]
+    direction = cleaned_data[1] if len(cleaned_data) == 2 else "ascending"
+
+    # Validate directional parameter
+    if direction not in ("ascending", "descending"):
+        print(
+            f"Invalid order '{direction}'. Use 'ascending' or 'descending'."
+        )
+        return
+    ascending = direction == "ascending"
+    
+    # sort accordingly
+    if 'date' in key or 'due' in key:
+        tasks.sort(
+            key=lambda x: (
+                (
+                    datetime.strptime(x['due'], "%d/%m/%Y") 
+                    if x.get('due') 
+                    else datetime.max
+                    ), 
+                x.get("name", "").lower()
+            ),
+            reverse=not ascending
+        )
+    elif 'name' in key:
+        tasks.sort(
+            key=lambda x: x.get("name", "").lower(), 
+            reverse=not ascending
+        )
+    else:
+        print(f"Unknown key \"{key}\". 'name' and 'date' are the only valid ones!")
+        return
+    
+    # save and return sorted tasks
+    if save:
+        save_tasks(tasks)
+    
+    return print_output(tasks)
+
 def filter_task_status(tasks : list[dict], status_filters: list) -> Iterator[dict]:
     completed_tasks = [task for task in tasks if task["completed"]]
     pending_tasks = [task for task in tasks if not task["completed"]]
@@ -300,9 +360,12 @@ def generate_emoji(task: dict) -> str:
     "urgent": "warning",
     "uncategorized": "file_folder",
 }
+    category_lower = task['category'].lower()
+    if category_lower in emoji_map:
+        return emojize(f":{emoji_map[category_lower]}:")
     
     for key, shortcode in emoji_map.items():
-        if key in task['category'].lower():
+        if key in category_lower:
             return emojize(f":{shortcode}:")
     
     return emojize(":question:")
@@ -345,15 +408,18 @@ def filter_tasks(tasks: list[dict], filter_types: list[str]) -> list:
     if not return_values:
         return ["No tasks match the selected filters"]
     
+    return print_output(return_values)
+
+def print_output(tasks: list[dict]):
     output = []
-    for values in return_values:
-        today, due_date = configure_date(values)
+    for task in tasks:
+        today, due_date = configure_date(task)
             
-        color = set_color(values, today, due_date)
+        color = set_color(task, today, due_date)
         
-        category_emoji = generate_emoji(values)
+        category_emoji = generate_emoji(task)
         
-        RETURN_TEMPLATE = f"[blue]{category_emoji}[/blue]  [{color}]{values['name']} (due: {values['due']}), [italic]id={values['id']}[/italic][/{color}]"
+        RETURN_TEMPLATE = f"[blue]{category_emoji}[/blue]  [{color}]{task['name']} (due: {task['due']}), [italic]id={task['id']}[/italic][/{color}]"
         
         output.append(RETURN_TEMPLATE)
     
