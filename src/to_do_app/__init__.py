@@ -21,9 +21,9 @@ def configure_cli() -> argparse.Namespace:
     parser.add_argument("--filter", metavar="FILTER_VALUE", nargs='+', help="Filter by status, priority, or category (e.g. pending, high, work)")
     parser.add_argument("--sort", metavar="VALUE", nargs='+', help="Sort by name and due date, default is ascending (e.g. name ascending, date descending) [use save at the end if you want that specific sort to be saved]")
     
-    parser.add_argument("--done", nargs="+", metavar="TASK_ID", type=int, help="Mark a task as done by passing in a task id")
-    parser.add_argument("--undo", nargs="+", metavar="TASK_ID", type=int, help="Mark a task as not done (undo completion) by passing in a task id")
-    parser.add_argument("--delete", nargs="+", metavar="TASK_ID", type=int, help="Delete a task by passing in a task id")
+    parser.add_argument("--done", nargs="+", metavar="TASK_ID", type=int, help="Mark a task or multiple tasks as done by passing in a task id [You can pass -1 to mark all tasks as done]")
+    parser.add_argument("--undo", nargs="+", metavar="TASK_ID", type=int, help="Mark a task or multiple tasks as not done (undo completion) by passing in a task id [You can pass -1 to mark all tasks as not done]")
+    parser.add_argument("--delete", nargs="+", metavar="TASK_ID", type=int, help="Delete a task or multiple tasks by passing in a task id [You can pass -1 to delete all tasks]")
     
     args = parser.parse_args()
     return args
@@ -193,6 +193,13 @@ def change_category(tasks: list[dict], category_data: list[str]) -> None:
     print(f"The category of task_{idx} was successfully changed to {category}.")
 
 def complete_task(tasks: list[dict], *ids: int) -> None:
+    if -1 in ids:
+        for task in tasks:
+            task['completed'] = True
+            print(f"Task: \"{task['name']}\" was successfully marked as complete!")
+        save_tasks(tasks)
+        return
+    
     for task in tasks:
         if task['id'] in ids:
             task['completed'] = True
@@ -201,6 +208,13 @@ def complete_task(tasks: list[dict], *ids: int) -> None:
     save_tasks(tasks)
 
 def undo_task(tasks: list[dict], *ids: int) -> None:
+    if -1 in ids:
+        for task in tasks:
+            task['completed'] = False
+            print(f"Task: \"{task['name']}\" was successfully undone!")
+        save_tasks(tasks)
+        return
+    
     for task in tasks:
         if task['id'] in ids:
             task['completed'] = False
@@ -209,6 +223,15 @@ def undo_task(tasks: list[dict], *ids: int) -> None:
     save_tasks(tasks)
 
 def delete_task(tasks: list[dict], *ids: int) -> None:
+    if -1 in ids:
+        temp_tasks = tasks.copy()
+        for task in temp_tasks:
+            task_name = task['name']
+            tasks.remove(task)
+            print(f"Task: \"{task_name}\" was successfully deleted!")
+        save_tasks(tasks)
+        return
+    
     remaining = [task for task in tasks if task['id'] not in ids]
     removed = [task for task in tasks if task['id'] in ids]
     for task in removed:

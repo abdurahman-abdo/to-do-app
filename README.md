@@ -56,9 +56,6 @@ uv run todo --done 1 4 7
 #### Full Reference:
 
 <dl>
-  <dt><code>-h</code> / <code>--help</code></dt>
-  <dd>shows help message</dd>
-
   <dt><code>--add</code> <b>[NEW_TASK_NAME]</b></dt>
   <dd>Add a new task for the first time, declaring the task's name</dd>
 
@@ -66,35 +63,38 @@ uv run todo --done 1 4 7
   <dd>Change an existing task's name</dd>
 
   <dt><code>--due</code> <b>[DD/MM/YYYY]</b></dt>
-  <dd>Assign a task's due date for the first time (use directly after --add) [optional, omit for no due date]</dd>
+  <dd>Assign a task's due date for the first time (use directly after --add) <b>[optional, omit for no due date]</b></dd>
 
   <dt><code>--set-date</code> <b>[TASK_ID NEW_DATE]</b></dt>
   <dd>Change an existing task's due date</dd>
 
   <dt><code>--priority</code> <b>[{high,medium,low}]</b></dt>
-  <dd>Assign a task's priority level for the first time (use directly after --add) [optional, omit for medium priority]</dd>
+  <dd>Assign a task's priority level for the first time (use directly after --add) <b>[optional, omit for medium priority]</b></dd>
 
   <dt><code>--set-priority</code> <b>[TASK_ID NEW_PRIORITY]</b></dt>
   <dd>Change an existing task's priority level</dd>
 
   <dt><code>--category</code> <b>[CATEGORY]</b></dt>
-  <dd>Assign a task category for the first time (use directly after --add) [optional, omit for uncategorized]</dd>
+  <dd>Assign a task category for the first time (use directly after --add) <b>[optional, omit for uncategorized]</b></dd>
 
   <dt><code>--set-category</code> <b>[TASK_ID NEW_CATEGORY]</b></dt>
   <dd>Change an existing task's category</dd>
 
   <dt><code>--filter</code> <b>[FILTER_VALUE/S ...]</b></dt>
-  <dd>Filter by status, priority, or category (e.g. pending, high, work) [can choose multiple filters]</dd>
+  <dd>Filter by status, priority, or category (e.g. pending, high, work) <em>[You can choose multiple filters]</em></dd>
 
   <dt><code>--sort</code> <b>KEY [DIRECTION] [save]</b></dt>
-  <dd>Sort by name and due date, default is ascending (e.g. name ascending, date descending) [use save at the end if you want that specific sort to be saved]</dd>
+  <dd>Sort by name and due date, default is ascending (e.g. name ascending, date descending) <em>[use <code>save</code> at the end if you want that specific sort to be saved]</em></dd>
 
   <dt><code>--done</code> <b>[TASK_ID ...]</b></dt>
-  <dd>Mark task/s as done by passing in a task id</dd>
+  <dd>Mark a task or multiple tasks as done by passing in a task id <em>[You can pass <code>-1</code> to mark all tasks as done]</em></dd>
 
   <dt><code>--undo</code> <b>[TASK_ID ...]</b></dt>
-  <dd>Mark task/s as not done (undo completion) by passing in a task id</dd>
+  <dd>Mark a task or multiple tasks as not done (undo completion) by passing in a task id <em>[You can pass <code>-1</code> to mark all tasks as not done]</em></dd>
 
   <dt><code>--delete</code> <b>[TASK_ID ...]</b></dt>
-  <dd>Delete task/s by passing in a task id</dd>
+  <dd>Delete task/s by passing in a task id <em>[You can pass <code>-1</code> to delete all tasks]</em></dd>
+
+   <dt><code>-h</code> / <code>--help</code></dt>
+   <dd>shows help message</dd>
 </dl>
