@@ -86,6 +86,9 @@ uv run todo --done 1 4 7
   <dt><code>--sort</code> <b>KEY [DIRECTION] [save]</b></dt>
   <dd>Sort by name and due date, default is ascending (e.g. name ascending, date descending) <em>[use <code>save</code> at the end if you want that specific sort to be saved]</em></dd>
 
+  <dt><code>--show</code> <b>[TASK_ID ...]</b></dt>
+  <dd>Show a specific task or multiple tasks based by passing in a task id/ids. <em>[You can pass <code>-1</code> to output all tasks]</em></dd>
+
   <dt><code>--done</code> <b>[TASK_ID ...]</b></dt>
   <dd>Mark a task or multiple tasks as done by passing in a task id <em>[You can pass <code>-1</code> to mark all tasks as done]</em></dd>
 
