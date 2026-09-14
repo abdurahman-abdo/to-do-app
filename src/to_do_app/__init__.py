@@ -20,6 +20,7 @@ def configure_cli() -> argparse.Namespace:
     
     parser.add_argument("--filter", metavar="FILTER_VALUE", nargs='+', help="Filter by status, priority, or category (e.g. pending, high, work)")
     parser.add_argument("--sort", metavar="VALUE", nargs='+', help="Sort by name and due date, default is ascending (e.g. name ascending, date descending) [use save at the end if you want that specific sort to be saved]")
+    parser.add_argument("--show", metavar="SHOW_TASK", nargs='+', type=int, help="Show a specific task or many tasks based on ids.")
     
     parser.add_argument("--done", nargs="+", metavar="TASK_ID", type=int, help="Mark a task or multiple tasks as done by passing in a task id [You can pass -1 to mark all tasks as done]")
     parser.add_argument("--undo", nargs="+", metavar="TASK_ID", type=int, help="Mark a task or multiple tasks as not done (undo completion) by passing in a task id [You can pass -1 to mark all tasks as not done]")
@@ -86,6 +87,9 @@ def main() -> None:
         undo_task(tasks, *args.undo)
     if args.delete:
         delete_task(tasks, *args.delete)
+    if args.show:
+        for line in show_tasks(tasks, *args.show):
+            rprint(line)
     if args.sort:
         for line in sort_tasks(tasks, args.sort):
             rprint(line)
@@ -237,6 +241,10 @@ def delete_task(tasks: list[dict], *ids: int) -> None:
     for task in removed:
         print(f"Task: \"{task['name']}\" was removed successfully!")
     save_tasks(remaining)
+
+def show_tasks(tasks: list[dict], *ids: int):
+    return_values = [task for task in tasks if task['id'] in ids]
+    return print_output(return_values)
 
 def sort_tasks(tasks: list[dict], sorting_data: list[str]):
     cleaned_data = [s.lower() for s in sorting_data]
@@ -433,7 +441,7 @@ def filter_tasks(tasks: list[dict], filter_types: list[str]) -> list:
     
     return print_output(return_values)
 
-def print_output(tasks: list[dict]):
+def print_output(tasks: list[dict]) -> list:
     output = []
     for task in tasks:
         today, due_date = configure_date(task)
