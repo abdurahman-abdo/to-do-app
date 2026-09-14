@@ -20,11 +20,11 @@ def configure_cli() -> argparse.Namespace:
     
     parser.add_argument("--filter", metavar="FILTER_VALUE", nargs='+', help="Filter by status, priority, or category (e.g. pending, high, work)")
     parser.add_argument("--sort", metavar="VALUE", nargs='+', help="Sort by name and due date, default is ascending (e.g. name ascending, date descending) [use save at the end if you want that specific sort to be saved]")
-    parser.add_argument("--show", metavar="SHOW_TASK", nargs='+', type=int, help="Show a specific task or many tasks based on ids.")
+    parser.add_argument("--show", metavar="TASK_ID", nargs='+', type=int, help="Show a specific task or multiple tasks based by passing in a task id/ids. [You can pass -1 to output all tasks]")
     
-    parser.add_argument("--done", nargs="+", metavar="TASK_ID", type=int, help="Mark a task or multiple tasks as done by passing in a task id [You can pass -1 to mark all tasks as done]")
-    parser.add_argument("--undo", nargs="+", metavar="TASK_ID", type=int, help="Mark a task or multiple tasks as not done (undo completion) by passing in a task id [You can pass -1 to mark all tasks as not done]")
-    parser.add_argument("--delete", nargs="+", metavar="TASK_ID", type=int, help="Delete a task or multiple tasks by passing in a task id [You can pass -1 to delete all tasks]")
+    parser.add_argument("--done", nargs="+", metavar="TASK_ID", type=int, help="Mark a task or multiple tasks as done by passing in a task id/ids [You can pass -1 to mark all tasks as done]")
+    parser.add_argument("--undo", nargs="+", metavar="TASK_ID", type=int, help="Mark a task or multiple tasks as not done (undo completion) by passing in a task id/ids [You can pass -1 to mark all tasks as not done]")
+    parser.add_argument("--delete", nargs="+", metavar="TASK_ID", type=int, help="Delete a task or multiple tasks by passing in a task id/ids [You can pass -1 to delete all tasks]")
     
     args = parser.parse_args()
     return args
@@ -243,6 +243,9 @@ def delete_task(tasks: list[dict], *ids: int) -> None:
     save_tasks(remaining)
 
 def show_tasks(tasks: list[dict], *ids: int):
+    if -1 in ids:
+        return print_output(tasks)
+    
     return_values = [task for task in tasks if task['id'] in ids]
     return print_output(return_values)
 
