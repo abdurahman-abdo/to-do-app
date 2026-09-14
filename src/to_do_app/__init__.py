@@ -244,9 +244,14 @@ def delete_task(tasks: list[dict], *ids: int) -> None:
 
 def show_tasks(tasks: list[dict], *ids: int):
     if -1 in ids:
+        if not tasks:
+            return ["No tasks found!"]
         return print_output(tasks)
     
     return_values = [task for task in tasks if task['id'] in ids]
+    if not return_values:
+        return ["No tasks were found with the given id(s)!"]
+    
     return print_output(return_values)
 
 def sort_tasks(tasks: list[dict], sorting_data: list[str]):
