@@ -26,8 +26,7 @@ def configure_cli() -> argparse.Namespace:
     parser.add_argument("--undo", nargs="+", metavar="TASK_ID", type=int, help="Mark a task or multiple tasks as not done (undo completion) by passing in a task id/ids [You can pass -1 to mark all tasks as not done]")
     parser.add_argument("--delete", nargs="+", metavar="TASK_ID", type=int, help="Delete a task or multiple tasks by passing in a task id/ids [You can pass -1 to delete all tasks]")
     
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 def load_tasks() -> list[dict]:
     DEFAULT_TASK = {
@@ -121,7 +120,7 @@ def add_task(tasks: list[dict], item: str, date: str, priority: str, category: s
         date = None
     if category == "None":
         category = "uncategorized"
-    if category in ["all", "pending", "completed", "high", "low", "medium"]:
+    if category in {"all", "pending", "completed", "high", "low", "medium"}:
         category = "uncategorized"
         print("Category can't be any of these: all, pending, completed, high, low, medium; and was defaulted to uncategorized")
     
@@ -155,10 +154,7 @@ def change_date(tasks: list[dict], date_data: list[str]) -> None:
     
     for task in tasks:
         if task['id'] == int(idx):
-            if date == "None":
-                task['due'] = None
-            else:
-                task['due'] = date
+            task['due'] = None if date == "None" else date
     
     save_tasks(tasks)
     print(f"The due date of task_{idx} was successfully changed to {date}.")
@@ -167,7 +163,7 @@ def change_priority(tasks: list[dict], priority_data: list[str]) -> None:
     idx, priority = priority_data
     priority = priority.lower()
     
-    if priority not in ["high", "medium", "low"]:
+    if priority not in {"high", "medium", "low"}:
         raise ValueError("Priority must be on of the following: high, medium, or low!")
     
     for task in tasks:
@@ -180,7 +176,7 @@ def change_priority(tasks: list[dict], priority_data: list[str]) -> None:
 def change_category(tasks: list[dict], category_data: list[str]) -> None:
     idx, category = category_data
     
-    if category in ["all", "pending", "completed", "high", "low", "medium"]:
+    if category in {"all", "pending", "completed", "high", "low", "medium"}:
         category = "uncategorized"
         print("Category can't be any of these: all, pending, completed, high, low, medium; and was defaulted to uncategorized!")
     
@@ -188,11 +184,8 @@ def change_category(tasks: list[dict], category_data: list[str]) -> None:
     
     for task in tasks:
         if task['id'] == int(idx):
-            if category == "None":
-                task['category'] = "uncategorized"
-            else:
-                task['category'] = category
-                
+            task['category'] = "uncategorized" if category == "None" else category
+    
     save_tasks(tasks)
     print(f"The category of task_{idx} was successfully changed to {category}.")
 
@@ -243,16 +236,15 @@ def delete_task(tasks: list[dict], *ids: int) -> None:
     save_tasks(remaining)
 
 def show_tasks(tasks: list[dict], *ids: int):
+    if not tasks:
+        return ["No tasks found!"]
     if -1 in ids:
-        if not tasks:
-            return ["No tasks found!"]
         return print_output(tasks)
     
-    return_values = [task for task in tasks if task['id'] in ids]
-    if not return_values:
-        return ["No tasks were found with the given id(s)!"]
-    
-    return print_output(return_values)
+    if return_values := [task for task in tasks if task['id'] in ids]:
+        return print_output(return_values)
+        
+    return ["No tasks were found with the given id(s)!"]
 
 def sort_tasks(tasks: list[dict], sorting_data: list[str]):
     cleaned_data = [s.lower() for s in sorting_data]
@@ -419,27 +411,25 @@ def filter_tasks(tasks: list[dict], filter_types: list[str]) -> list:
 
     # Cleanup
     possible_values = ["all", "pending", "completed", "high", "low", "medium", *list(map(str.lower, filter(lambda item: isinstance(item, str), existing_categories)))]
-    if not any(filters in possible_values for filters in filter_types):
+    if all(filters not in possible_values for filters in filter_types):
         return ["The filters specified were never found!"]
     
     # filter statuses
-    if "pending" in filter_types and not any(not t['completed'] for t in tasks):
+    if "pending" in filter_types and all(task['completed'] for task in tasks):
         return ["No pending tasks found!"]
-    if "completed" in filter_types and not any(t['completed'] for t in tasks):
+    if "completed" in filter_types and all(not task['completed'] for task in tasks):
         return ["No completed tasks found!"]
 
     status_filter_values = filter_task_status(tasks, filter_types)
     return_values = list(status_filter_values)
     
     # filter priorities
-    priority_filter = [p for p in ["high", "medium", "low"] if p in filter_types]
-    if priority_filter:
+    if priority_filter:= [priority for priority in {"high", "medium", "low"} if priority in filter_types]:
         priority_filter_values = filter_task_priority(return_values, priority_filter)
         return_values = list(priority_filter_values)
     
     # filter categories
-    category_filter = [p for p in existing_categories if isinstance(p, str) and p.lower() in filter_types]
-    if category_filter:
+    if category_filter:= [p for p in existing_categories if isinstance(p, str) and p.lower() in filter_types]:
         category_filter_values = filter_task_category(return_values, category_filter)
         return_values = list(category_filter_values)
     
