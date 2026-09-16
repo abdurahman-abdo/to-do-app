@@ -4,6 +4,9 @@ from typing import Iterator
 from rich import print as rprint
 import argparse, re, json, os, sys
 
+FILE_NAME = os.path.join(os.path.dirname(__file__), "data", "tasks.json")
+os.makedirs(os.path.dirname(FILE_NAME), exist_ok=True)
+
 def configure_cli() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--add", metavar="NEW_TASK_NAME", help="Add a new task for the first time, declaring the task's name")
@@ -42,6 +45,7 @@ def load_tasks() -> list[dict]:
         with open(FILE_NAME, "r", encoding="utf-8") as file:
             raw_tasks = json.load(file)
     except (json.JSONDecodeError, IOError):
+        print("Warning: tasks file was corrupted, starting fresh.")
         return []
     
     
@@ -64,18 +68,15 @@ def main() -> None:
         print("Welcome to the To-Do App! Use --help to see available commands.")
         return
     
-    global FILE_NAME
-    FILE_NAME = os.path.join(os.path.dirname(__file__), r"data\tasks.json")
-    
     args = configure_cli()
     tasks = load_tasks()
     
     if args.add:
         add_task(tasks, args.add, args.due, args.priority, args.category)
     if args.set_name:
-        change_name(tasks, *args.set_name)
+        change_name(tasks, args.set_name)
     if args.set_date:
-        change_date(tasks, *args.set_date)
+        change_date(tasks, args.set_date)
     if args.set_priority:
         change_priority(tasks, args.set_priority)
     if args.set_category:
@@ -111,27 +112,28 @@ def is_valid_date(date_str: str) -> bool:
     except ValueError:
         return False
 
-def add_task(tasks: list[dict], item: str, date: str, priority: str, category: str) -> None:
-    if not is_valid_date(date):
+def add_task(tasks: list[dict], item: str, due_date: str, priority: str, category: str) -> None:
+    if not is_valid_date(due_date):
             print("due date must be an appropriate date in DD/MM/YYYY format")
             return
     
-    if date == "None":
-        date = None
+    if due_date == "None":
+        due_date = None
     if category == "None":
         category = "uncategorized"
-    if category in {"all", "pending", "completed", "high", "low", "medium"}:
+    if category.lower() in {"all", "pending", "completed", "high", "low", "medium"}:
         category = "uncategorized"
         print("Category can't be any of these: all, pending, completed, high, low, medium; and was defaulted to uncategorized")
     
     new_id = max((task.get("id", 0) for task in tasks), default=0) + 1
-    tasks.append({"id": new_id, 
-                  "name": item,
-                  "completed": False,
-                  "due": date,
-                  "priority": priority.lower(),
-                  "category": category.title(),
-                  })
+    tasks.append({
+        "id": new_id, 
+        "name": item,
+        "completed": False,
+        "due": due_date,
+        "priority": priority.lower(),
+        "category": category.lower(),
+    })
     save_tasks(tasks)
     print(f"Task {item} with id {new_id} was added successfully!")
 
@@ -141,55 +143,75 @@ def change_name(tasks: list[dict], name_data: list[str]) -> None:
     for task in tasks:
         if task['id'] == int(idx):
             task['name'] = name
-    
+            print(f"The task name of task_{idx} was successfully changed to {name}.")
+            break
+    else:
+        print(f"No task found with id {idx}.")
+        return
+
     save_tasks(tasks)
-    print(f"The task name of task_{idx} was successfully changed to {name}.")
 
 def change_date(tasks: list[dict], date_data: list[str]) -> None:
-    idx, date = date_data
+    idx, due_date = date_data
     
-    if not is_valid_date(date):
+    if not is_valid_date(due_date):
         print("due date must be an appropriate date in DD/MM/YYYY format")
         return
     
     for task in tasks:
         if task['id'] == int(idx):
-            task['due'] = None if date == "None" else date
-    
+            task['due'] = None if due_date == "None" else due_date
+            print(f"The due date of task_{idx} was successfully changed to {due_date}.")
+            break
+    else:
+        print(f"No task found with id {idx}.")
+        return
+
     save_tasks(tasks)
-    print(f"The due date of task_{idx} was successfully changed to {date}.")
 
 def change_priority(tasks: list[dict], priority_data: list[str]) -> None:
     idx, priority = priority_data
     priority = priority.lower()
     
     if priority not in {"high", "medium", "low"}:
-        raise ValueError("Priority must be on of the following: high, medium, or low!")
+        print("Priority must be one of the following: high, medium, or low!")
+        return
     
     for task in tasks:
         if task['id'] == int(idx):
             task['priority'] = priority
-    
+            print(f"The priority of task_{idx} was successfully changed to {priority}.")
+            break
+    else:
+        print(f"No task found with id {idx}.")
+        return
+
     save_tasks(tasks)
-    print(f"The priority of task_{idx} was successfully changed to {priority}.")
 
 def change_category(tasks: list[dict], category_data: list[str]) -> None:
     idx, category = category_data
     
-    if category in {"all", "pending", "completed", "high", "low", "medium"}:
+    if category.lower() in {"all", "pending", "completed", "high", "low", "medium", "none"}:
         category = "uncategorized"
-        print("Category can't be any of these: all, pending, completed, high, low, medium; and was defaulted to uncategorized!")
-    
-    category = category.title()
+        print("Category can't be none or any of these: all, pending, completed, high, low, medium; and was defaulted to uncategorized!")
+
+    category = category.lower()
     
     for task in tasks:
         if task['id'] == int(idx):
-            task['category'] = "uncategorized" if category == "None" else category
-    
+            task['category'] = category
+            print(f"The category of task_{idx} was successfully changed to {category}.")
+            break
+    else:
+        print(f"No task found with id {idx}.")
+        return
     save_tasks(tasks)
-    print(f"The category of task_{idx} was successfully changed to {category}.")
 
 def complete_task(tasks: list[dict], *ids: int) -> None:
+    if not tasks:
+        print("No tasks found!")
+        return
+
     if -1 in ids:
         for task in tasks:
             task['completed'] = True
@@ -197,14 +219,24 @@ def complete_task(tasks: list[dict], *ids: int) -> None:
         save_tasks(tasks)
         return
     
+    matched = False
     for task in tasks:
         if task['id'] in ids:
             task['completed'] = True
             print(f"Task: \"{task['name']}\" was successfully marked as complete!")
+            matched = True
     
+    if not matched:
+        print("No task found with the given ids.")
+        return
+
     save_tasks(tasks)
 
 def undo_task(tasks: list[dict], *ids: int) -> None:
+    if not tasks:
+        print("No tasks found!")
+        return
+
     if -1 in ids:
         for task in tasks:
             task['completed'] = False
@@ -212,14 +244,24 @@ def undo_task(tasks: list[dict], *ids: int) -> None:
         save_tasks(tasks)
         return
     
+    matched = False
     for task in tasks:
         if task['id'] in ids:
             task['completed'] = False
             print(f"Task: \"{task['name']}\" was successfully undone!")
+            matched = True
     
+    if not matched:
+        print("No task found with the given ids.")
+        return
+
     save_tasks(tasks)
 
 def delete_task(tasks: list[dict], *ids: int) -> None:
+    if not tasks:
+        print("No tasks found!")
+        return
+
     if -1 in ids:
         temp_tasks = tasks.copy()
         for task in temp_tasks:
@@ -231,6 +273,11 @@ def delete_task(tasks: list[dict], *ids: int) -> None:
     
     remaining = [task for task in tasks if task['id'] not in ids]
     removed = [task for task in tasks if task['id'] in ids]
+    
+    if not removed:
+        print("No task found with the given ids.")
+        return
+
     for task in removed:
         print(f"Task: \"{task['name']}\" was removed successfully!")
     save_tasks(remaining)
@@ -247,6 +294,10 @@ def show_tasks(tasks: list[dict], *ids: int):
     return ["No tasks were found with the given id(s)!"]
 
 def sort_tasks(tasks: list[dict], sorting_data: list[str]):
+    if not tasks:
+        print("No tasks found!")
+        return
+
     cleaned_data = [s.lower() for s in sorting_data]
     
     # check if the user wants to save
@@ -360,43 +411,114 @@ def set_color(task: dict, today: date, due_date: date) -> str:
 
 def generate_emoji(task: dict) -> str:
     emoji_map = {
-    "work": "briefcase",
-    "personal": "bust_in_silhouette",
-    "shopping": "shopping_cart",
-    "groceries": "shopping_bags",
-    "health": "stethoscope",
-    "fitness": "muscle",
-    "finance": "money_with_wings",
-    "bills": "receipt",
-    "home": "house",
-    "family": "family",
-    "travel": "airplane",
-    "study": "books",
-    "school": "graduation_cap",
-    "work_urgent": "rotating_light",
-    "social": "speech_balloon",
-    "food": "fork_and_knife",
-    "car": "car",
-    "pets": "paw_prints",
-    "hobby": "art",
-    "reading": "open_book",
-    "coding": "computer",
-    "meeting": "calendar",
-    "birthday": "birthday",
-    "gift": "gift",
-    "cleaning": "broom",
-    "garden": "seedling",
-    "appointment": "date",
-    "medicine": "pill",
-    "urgent": "warning",
-    "uncategorized": "file_folder",
-}
+        # work / career
+        r"work|job|career": "briefcase",
+        "work_urgent": "rotating_light",
+        r"meeting|meetings": "calendar",
+        r"deadline|deadlines": "hourglass_flowing_sand",
+        r"project|projects": "clipboard",
+        r"email|emails": "email",
+        r"interview|interviews": "necktie",
+
+        # personal / social
+        "personal": "bust_in_silhouette",
+        r"family": "family",
+        r"friend|friends": "handshake",
+        r"social": "speech_balloon",
+        r"date|dating": "heart",
+        r"birthday|b-?day": "birthday",
+        r"gift|gifts|present|presents": "gift",
+        r"party|parties": "tada",
+        r"wedding": "ring",
+
+        # shopping / errands
+        r"shopping": "shopping_cart",
+        r"grocer(?:y|ies)": "shopping_bags",
+        r"errand|errands": "walking",
+        r"return|returns": "package",
+
+        # health / fitness
+        r"health": "stethoscope",
+        r"fitness|workout|gym|exercise": "muscle",
+        r"run|running|jog|jogging": "runner",
+        r"yoga|meditation|mindfulness": "person_in_lotus_position",
+        r"sleep|rest": "sleeping",
+        r"medicine|medication|medics?": "pill",
+        r"appointment|appointments": "date",
+        r"dentist|dental": "tooth",
+        r"therapy|therapist": "brain",
+        r"diet|nutrition": "green_salad",
+
+        # finance
+        r"finance|financial": "money_with_wings",
+        r"bills?": "receipt",
+        r"budget|budgeting": "bar_chart",
+        r"tax|taxes": "money_with_wings",
+        r"invest|investing|investment": "chart_with_upwards_trend",
+        r"savings?": "bank",
+        r"loan|loans|debt": "credit_card",
+
+        # home / chores
+        r"home|house": "house",
+        r"cleaning|clean": "broom",
+        r"laundry": "shirt",
+        r"cooking|cook": "cooking",
+        r"garden(?:s|ing)?": "seedling",
+        r"repair|repairs|maintenance|fix": "hammer_and_wrench",
+        r"move|moving|relocation": "moving_truck",
+
+        # food
+        r"foods?": "fork_and_knife",
+        r"restaurant|dining|eating out": "fork_and_knife_with_plate",
+        r"coffee": "coffee",
+        r"baking|bake": "bread",
+
+        # transport
+        r"cars?": "car",
+        r"travel|trip|trips|vacation": "airplane",
+        r"flight|flights": "airplane_departure",
+        r"train|trains": "steam_locomotive",
+        r"parking": "parking",
+        r"gas|fuel": "fuelpump",
+
+        # study / school
+        r"study|studies|studying": "books",
+        r"school": "graduation_cap",
+        r"homework": "pencil",
+        r"exam|exams|test|tests": "memo",
+        r"read(?:ing)?": "open_book",
+        r"course|courses|class|classes": "school",
+
+        # tech / coding
+        r"coding|code|programming|dev": "computer",
+        r"bug|bugs|debug|debugging": "beetle",
+        r"design|ux|ui": "art",
+        r"backup|backups": "floppy_disk",
+
+        # hobbies / leisure
+        r"hobby|hobbies": "art",
+        r"music": "musical_note",
+        r"movie|movies|film|films": "clapper_board",
+        r"game|games|gaming": "video_game",
+        r"photo|photos|photography": "camera",
+        r"writing|write": "writing_hand",
+
+        # pets / misc
+        r"pets?": "paw_prints",
+        r"vet|veterinary": "dog",
+
+        # urgency / catch-all
+        r"urgent|asap|important": "warning",
+        r"uncategorized|misc|other|general": "file_folder",
+    }
+    
     category_lower = task['category'].lower()
+    
     if category_lower in emoji_map:
         return emojize(f":{emoji_map[category_lower]}:")
     
     for key, shortcode in emoji_map.items():
-        if key in category_lower:
+        if re.search(rf"\b(?:{key})\b", category_lower):
             return emojize(f":{shortcode}:")
     
     return emojize(":question:")
