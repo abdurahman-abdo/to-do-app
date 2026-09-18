@@ -26,7 +26,7 @@ def configure_cli() -> argparse.Namespace:
     parser.add_argument("--show", metavar="TASK_ID", nargs='+', type=int, help="Show a specific task or multiple tasks based by passing in a task id/ids. [You can pass -1 to output all tasks]")
     
     parser.add_argument("--done", nargs="+", metavar="TASK_ID", type=int, help="Mark a task or multiple tasks as done by passing in a task id/ids [You can pass -1 to mark all tasks as done]")
-    parser.add_argument("--undo", nargs="+", metavar="TASK_ID", type=int, help="Mark a task or multiple tasks as not done (undo completion) by passing in a task id/ids [You can pass -1 to mark all tasks as not done]")
+    parser.add_argument("--reopen", nargs="+", metavar="TASK_ID", type=int, help="Mark a task or multiple tasks as pending (undo completion) by passing in a task id/ids [You can pass -1 to mark all tasks as not done]")
     parser.add_argument("--delete", nargs="+", metavar="TASK_ID", type=int, help="Delete a task or multiple tasks by passing in a task id/ids [You can pass -1 to delete all tasks]")
     
     return parser.parse_args()
@@ -83,8 +83,8 @@ def main() -> None:
         change_category(tasks, args.set_category)
     if args.done:
         complete_task(tasks, *args.done)
-    if args.undo:
-        undo_task(tasks, *args.undo)
+    if args.reopen:
+        reopen_task(tasks, *args.reopen)
     if args.delete:
         delete_task(tasks, *args.delete)
     if args.show:
@@ -119,11 +119,9 @@ def add_task(tasks: list[dict], item: str, due_date: str, priority: str, categor
     
     if due_date == "None":
         due_date = None
-    if category == "None":
+    if category.lower() in {"all", "pending", "completed", "high", "low", "medium", "none"}:
         category = "uncategorized"
-    if category.lower() in {"all", "pending", "completed", "high", "low", "medium"}:
-        category = "uncategorized"
-        print("Category can't be any of these: all, pending, completed, high, low, medium; and was defaulted to uncategorized")
+        print("Category can't be none or any of these: all, pending, completed, high, low, medium; and was defaulted to uncategorized")
     
     new_id = max((task.get("id", 0) for task in tasks), default=0) + 1
     tasks.append({
@@ -232,7 +230,7 @@ def complete_task(tasks: list[dict], *ids: int) -> None:
 
     save_tasks(tasks)
 
-def undo_task(tasks: list[dict], *ids: int) -> None:
+def reopen_task(tasks: list[dict], *ids: int) -> None:
     if not tasks:
         print("No tasks found!")
         return
@@ -240,7 +238,7 @@ def undo_task(tasks: list[dict], *ids: int) -> None:
     if -1 in ids:
         for task in tasks:
             task['completed'] = False
-            print(f"Task: \"{task['name']}\" was successfully undone!")
+            print(f"Task: \"{task['name']}\" was successfully marked as pending!")
         save_tasks(tasks)
         return
     
@@ -248,7 +246,7 @@ def undo_task(tasks: list[dict], *ids: int) -> None:
     for task in tasks:
         if task['id'] in ids:
             task['completed'] = False
-            print(f"Task: \"{task['name']}\" was successfully undone!")
+            print(f"Task: \"{task['name']}\" was successfully marked as pending!")
             matched = True
     
     if not matched:

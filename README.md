@@ -9,7 +9,7 @@ A command-line task manager built with Python, featuring priorities, categories,
 - `uv`
 
 ## 🚀 Features
-- Add, edit, complete, undo, and delete tasks by ID
+- Add, edit, complete, undo completion, and delete tasks by ID
 - Priority levels (high/medium/low) with color-coded output
 - Custom categories with emoji icons, falling back to default for unmapped ones
 - Multi-value filtering; can combine status, priority, and category in one command
@@ -43,7 +43,7 @@ Along the way I also used this as a chance to actually practice git properly by 
 `--filter`
 
 #### Status & Deletion
-`--done`, `--undo`, `--delete`
+`--done`, `--reopen`, `--delete`
 
 #### Examples
 ```bash
@@ -92,8 +92,8 @@ uv run todo --done 1 4 7
   <dt><code>--done</code> <b>[TASK_ID ...]</b></dt>
   <dd>Mark a task or multiple tasks as done by passing in a task id <em>[You can pass <code>-1</code> to mark all tasks as done]</em></dd>
 
-  <dt><code>--undo</code> <b>[TASK_ID ...]</b></dt>
-  <dd>Mark a task or multiple tasks as not done (undo completion) by passing in a task id <em>[You can pass <code>-1</code> to mark all tasks as not done]</em></dd>
+  <dt><code>--reopen</code> <b>[TASK_ID ...]</b></dt>
+  <dd>Mark a task or multiple tasks as pending (undo completion) by passing in a task id <em>[You can pass <code>-1</code> to mark all tasks as not done]</em></dd>
 
   <dt><code>--delete</code> <b>[TASK_ID ...]</b></dt>
   <dd>Delete task/s by passing in a task id <em>[You can pass <code>-1</code> to delete all tasks]</em></dd>
