@@ -23,7 +23,9 @@ def configure_cli() -> argparse.Namespace:
     
     parser.add_argument("--filter", metavar="FILTER_VALUE", nargs='+', help="Filter by status, priority, or category (e.g. pending, high, work)")
     parser.add_argument("--sort", metavar="VALUE", nargs='+', help="Sort by name and due date, default is ascending (e.g. name ascending, date descending) [use save at the end if you want that specific sort to be saved]")
+    
     parser.add_argument("--show", metavar="TASK_ID", nargs='+', type=int, help="Show a specific task or multiple tasks based by passing in a task id/ids. [You can pass -1 to output all tasks]")
+    parser.add_argument("--search", metavar="KEY_WORD", help="Pass in a specific keyword and lookup for results matching the keyword in task name and task category")
     
     parser.add_argument("--done", nargs="+", metavar="TASK_ID", type=int, help="Mark a task or multiple tasks as done by passing in a task id/ids [You can pass -1 to mark all tasks as done]")
     parser.add_argument("--reopen", nargs="+", metavar="TASK_ID", type=int, help="Mark a task or multiple tasks as pending (undo completion) by passing in a task id/ids [You can pass -1 to mark all tasks as not done]")
@@ -90,6 +92,9 @@ def main() -> None:
     if args.show:
         for line in show_tasks(tasks, *args.show):
             rprint(line)
+    if args.search:
+        for line in search_keyword(tasks, args.search):
+            rprint(line)
     if args.sort:
         for line in sort_tasks(tasks, args.sort):
             rprint(line)
@@ -99,8 +104,9 @@ def main() -> None:
     
     # whatever the case, finally print a summary
     if tasks:
-        print("---------------------------")
+        print("========================================================")
         print(generate_summary(tasks))
+        print("========================================================")
 
 def is_valid_date(date_str: str) -> bool:
     if date_str == "None":
@@ -357,6 +363,24 @@ def sort_tasks(tasks: list[dict], sorting_data: list[str]):
     
     return print_output(tasks)
 
+def search_keyword(tasks: list[dict], keyword: str) -> list[str]:
+    keyword = keyword.strip().lower()
+    return_values = []
+    
+    if not keyword:
+        return ["Keyword was empty!"]
+    
+    for task in tasks:
+        text = task["name"].lower() + " " + task["category"].lower()
+
+        if keyword in text:
+            return_values.append(task)
+
+    if not return_values:
+        return [f"No tasks match the selected keyword \"{keyword}\""]
+
+    return print_output(return_values)
+
 def filter_task_status(tasks : list[dict], status_filters: list) -> Iterator[dict]:
     completed_tasks = [task for task in tasks if task["completed"]]
     pending_tasks = [task for task in tasks if not task["completed"]]
@@ -527,7 +551,7 @@ def generate_emoji(task: dict) -> str:
     
     return emojize(":question:")
 
-def filter_tasks(tasks: list[dict], filter_types: list[str]) -> list:
+def filter_tasks(tasks: list[dict], filter_types: list[str]) -> list[str]:
     if not tasks:
         return ["No tasks found!"]
     
@@ -565,7 +589,7 @@ def filter_tasks(tasks: list[dict], filter_types: list[str]) -> list:
     
     return print_output(return_values)
 
-def print_output(tasks: list[dict]) -> list:
+def print_output(tasks: list[dict]) -> list[str]:
     output = []
     for task in tasks:
         today, due_date = configure_date(task)
