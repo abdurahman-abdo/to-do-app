@@ -96,6 +96,11 @@ def main() -> None:
     if args.filter:
         for line in filter_tasks(tasks, args.filter):
             rprint(line)
+    
+    # whatever the case, finally print a summary
+    if tasks:
+        print("---------------------------")
+        print(generate_summary(tasks))
 
 def is_valid_date(date_str: str) -> bool:
     if date_str == "None":
@@ -278,6 +283,7 @@ def delete_task(tasks: list[dict], *ids: int) -> None:
 
     for task in removed:
         print(f"Task: \"{task['name']}\" was removed successfully!")
+    tasks[:] = remaining
     save_tasks(remaining)
 
 def show_tasks(tasks: list[dict], *ids: int):
@@ -573,6 +579,24 @@ def print_output(tasks: list[dict]) -> list:
         output.append(RETURN_TEMPLATE)
     
     return output
+
+def generate_summary(tasks: list[dict]) -> str:
+    pending_count = 0
+    completed_count = 0
+    overdue = 0
+
+    for task in tasks:
+        if task["completed"]:
+            completed_count += 1
+        else:
+            today, due_date = configure_date(task)
+            
+            if today > due_date:
+                overdue += 1
+            else:
+                pending_count += 1
+
+    return f"Summary: {len(tasks)} total, {pending_count} pending, {overdue} overdue, {completed_count} done."
 
 if __name__ == "__main__":
     main()
